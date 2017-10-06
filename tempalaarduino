@@ -1,0 +1,98 @@
+// www.arduinesp.com 
+//
+// Plot DTH11 data on thingspeak.com using an ESP8266 
+// April 11 2015
+// Author: Jeroen Beemster
+// Website: www.arduinesp.com
+ 
+ 
+
+#include <ESP8266WiFi.h>
+#include <WiFiManager.h> 
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+
+#include <OneWire.h>
+#include <DallasTemperature.h>
+ 
+// replace with your channel's thingspeak API key, 
+String apiKey = "BHZO61ZX9LLLAYIK";
+//const char* ssid = "ssid";
+//const char* password = "password";
+ 
+const char* server = "api.thingspeak.com";
+
+
+ 
+#define ONE_WIRE_BUS 2  // DS18B20 pin, what pin we're connected to
+OneWire oneWire(ONE_WIRE_BUS);
+DallasTemperature DS18B20(&oneWire);
+
+ 
+void setup() {
+    // put your setup code here, to run once:
+    Serial.begin(115200);
+
+    //WiFiManager
+    WiFiManager wifiManager;
+    
+    //reset saved settings
+    //wifiManager.resetSettings();
+    
+    //set custom ip for portal
+    //wifiManager.setAPStaticIPConfig(IPAddress(10,0,1,1), IPAddress(10,0,1,1), IPAddress(255,255,255,0));
+
+    //fetches ssid and pass from eeprom and tries to connect
+    //if it does not connect it starts an access point with the specified name
+    //here  "AutoConnectAP"
+    //and goes into a blocking loop awaiting configuration
+    wifiManager.autoConnect("AutoConnectAP");
+    //or use this for auto generated name ESP + ChipID
+    //wifiManager.autoConnect();
+
+    
+    //if you get here you have connected to the WiFi
+    Serial.println("connected...yeey :)");
+}
+
+ 
+void loop() {
+   WiFiClient client;  
+
+  DS18B20.requestTemperatures();
+  float t = DS18B20.getTempCByIndex(0);
+  if (isnan(t)) {              
+    Serial.println("Failed to read from sensor!");
+    return;
+  }
+ 
+  if (client.connect(server,80)) {  //   "184.106.153.149" or api.thingspeak.com
+    String postStr = apiKey;
+           postStr +="&field1=";
+        
+           postStr += String(t);
+           postStr += "\r\n\r\n";
+ 
+     client.print("POST /update HTTP/1.1\n"); 
+     client.print("Host: api.thingspeak.com\n"); 
+     client.print("Connection: close\n"); 
+     client.print("X-THINGSPEAKAPIKEY: "+apiKey+"\n"); 
+     client.print("Content-Type: application/x-www-form-urlencoded\n"); 
+     client.print("Content-Length: "); 
+     client.print(postStr.length()); 
+     client.print("\n\n"); 
+     client.print(postStr);
+           
+ 
+     Serial.print("Temperature: ");
+     Serial.print(t);
+     Serial.print(" degrees Celcius"); // Humidity: "); 
+     Serial.println(" send to Thingspeak");    
+  }
+  client.stop();
+   
+  Serial.println("Waiting...");    
+  // thingspeak needs minimum 15 sec delay between updates
+  ESP.deepSleep(15 * 60 * 1000 * 1000);
+  //delay(900000);  
+}
