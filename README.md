@@ -10,3 +10,5 @@ https://www.digi.com/products/cellular-solutions/cellular-routers/digi-transport
 https://www.python.org/download/releases/2.4.3/
 
 https://bitbucket.org/MattHawkinsUK/rpispy-misc/raw/master/python/templogger.py
+
+https://www.raspberrypi-spy.co.uk/2015/06/basic-temperature-logging-to-the-internet-with-raspberry-pi/
